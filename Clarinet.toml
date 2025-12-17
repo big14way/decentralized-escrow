@@ -1,0 +1,26 @@
+[project]
+name = "decentralized-escrow"
+description = "P2P escrow service with Chainhook integration for event tracking, fees, and user analytics"
+authors = ["Builder"]
+telemetry = false
+cache_dir = "./.cache"
+requirements = []
+
+[contracts.escrow-manager]
+path = "contracts/escrow-manager.clar"
+clarity_version = 4
+epoch = 3.3
+
+[contracts.escrow-analytics]
+path = "contracts/escrow-analytics.clar"
+clarity_version = 4
+epoch = 3.3
+
+[repl.analysis]
+passes = ["check_checker"]
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false

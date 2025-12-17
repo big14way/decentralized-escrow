@@ -1,0 +1,38 @@
+{
+  "chain": "stacks",
+  "uuid": "escrow-fee-tracker",
+  "name": "Escrow Fee Collection Tracker",
+  "version": 1,
+  "networks": {
+    "testnet": {
+      "if_this": {
+        "scope": "print_event",
+        "contract_identifier": "YOUR_DEPLOYER_ADDRESS.escrow-manager",
+        "contains": "fee-collected"
+      },
+      "then_that": {
+        "http_post": {
+          "url": "http://localhost:3001/api/fee-events",
+          "authorization_header": "Bearer YOUR_AUTH_TOKEN"
+        }
+      },
+      "start_block": 1,
+      "decode_clarity_values": true
+    },
+    "mainnet": {
+      "if_this": {
+        "scope": "print_event",
+        "contract_identifier": "YOUR_MAINNET_ADDRESS.escrow-manager",
+        "contains": "fee-collected"
+      },
+      "then_that": {
+        "http_post": {
+          "url": "https://your-api.com/api/fee-events",
+          "authorization_header": "Bearer YOUR_AUTH_TOKEN"
+        }
+      },
+      "start_block": 1,
+      "decode_clarity_values": true
+    }
+  }
+}

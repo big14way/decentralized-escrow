@@ -1,0 +1,25 @@
+---
+id: 0
+name: Testnet deployment
+network: testnet
+stacks-node: "https://api.testnet.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: escrow-analytics
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 13065179
+            path: contracts/escrow-analytics.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: escrow-manager
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 13180301
+            path: contracts/escrow-manager.clar
+            anchor-block-only: true
+            clarity-version: 4
+      epoch: "3.3"
