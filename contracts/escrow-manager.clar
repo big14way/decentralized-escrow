@@ -463,3 +463,4 @@
         (ok true)))
 (define-data-var escrow-var-1 uint u1)
 (define-data-var escrow-var-2 uint u2)
+(define-data-var escrow-var-3 uint u3)
