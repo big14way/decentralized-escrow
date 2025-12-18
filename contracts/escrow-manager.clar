@@ -461,3 +461,4 @@
         (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
         (map-set arbiters arbiter false)
         (ok true)))
+(define-data-var escrow-var-1 uint u1)
