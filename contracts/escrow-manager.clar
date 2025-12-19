@@ -13,6 +13,9 @@
 (define-constant ERR_NOT_FUNDED (err u20006))
 (define-constant ERR_DISPUTE_ACTIVE (err u20007))
 (define-constant ERR_INVALID_STATE (err u20008))
+(define-constant ERR_ALREADY_ESCALATED (err u20009))
+(define-constant ERR_ESCALATION_NOT_ALLOWED (err u20010))
+(define-constant ERR_ESCALATION_PERIOD_EXPIRED (err u20011))
 
 ;; Escrow status
 (define-constant STATUS_PENDING u0)
@@ -36,6 +39,8 @@
 (define-data-var total-fees-collected uint u0)
 (define-data-var total-users uint u0)
 (define-data-var active-escrows uint u0)
+(define-data-var escalation-period uint u259200) ;; 3 days in seconds
+(define-data-var total-escalations uint u0)
 
 ;; ========================================
 ;; Data Maps
@@ -76,6 +81,22 @@
 
 ;; Authorized arbiters
 (define-map arbiters principal bool)
+
+;; Dispute escalation tracking
+(define-map dispute-escalations
+    uint
+    {
+        escalation-level: uint,
+        escalated-at: uint,
+        escalated-by: principal,
+        escalation-arbiter: (optional principal),
+        escalation-reason: (optional (string-ascii 256)),
+        escalation-deadline: uint
+    }
+)
+
+;; Senior arbiters (for escalated disputes)
+(define-map senior-arbiters principal bool)
 
 ;; ========================================
 ;; Print Event Structures (for Chainhook)
@@ -461,8 +482,142 @@
         (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
         (map-set arbiters arbiter false)
         (ok true)))
-(define-data-var escrow-var-1 uint u1)
-(define-data-var escrow-var-2 uint u2)
-(define-data-var escrow-var-3 uint u3)
-(define-data-var escrow-var-4 uint u4)
-(define-data-var escrow-var-5 uint u5)
+
+;; ========================================
+;; Dispute Escalation Functions
+;; ========================================
+
+;; Escalate a dispute to senior arbiter
+(define-public (escalate-dispute (escrow-id uint) (escalation-reason (string-ascii 256)))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (existing-escalation (map-get? dispute-escalations escrow-id)))
+        ;; Validations
+        (asserts! (is-eq (get status escrow) STATUS_DISPUTED) ERR_INVALID_STATE)
+        (asserts! (is-none existing-escalation) ERR_ALREADY_ESCALATED)
+        ;; Only buyer, seller, or original arbiter can escalate
+        (asserts! (or (is-eq tx-sender (get buyer escrow))
+                      (is-eq tx-sender (get seller escrow))
+                      (match (get arbiter escrow)
+                        assigned-arbiter (is-eq tx-sender assigned-arbiter)
+                        false))
+                  ERR_NOT_AUTHORIZED)
+
+        ;; Create escalation record
+        (map-set dispute-escalations escrow-id {
+            escalation-level: u1,
+            escalated-at: stacks-block-time,
+            escalated-by: tx-sender,
+            escalation-arbiter: none,
+            escalation-reason: (some escalation-reason),
+            escalation-deadline: (+ stacks-block-time (var-get escalation-period))
+        })
+
+        ;; Update statistics
+        (var-set total-escalations (+ (var-get total-escalations) u1))
+
+        ;; Emit Chainhook event
+        (print {
+            event: "dispute-escalated",
+            escrow-id: escrow-id,
+            escalated-by: tx-sender,
+            escalation-level: u1,
+            reason: escalation-reason,
+            timestamp: stacks-block-time
+        })
+        (ok true)))
+
+;; Assign senior arbiter to escalated dispute
+(define-public (assign-senior-arbiter (escrow-id uint) (senior-arbiter principal))
+    (let ((escalation (unwrap! (map-get? dispute-escalations escrow-id) ERR_ESCROW_NOT_FOUND)))
+        ;; Only contract owner can assign senior arbiters
+        (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+        ;; Verify the arbiter is authorized as senior
+        (asserts! (default-to false (map-get? senior-arbiters senior-arbiter)) ERR_NOT_AUTHORIZED)
+        ;; Check escalation hasn't expired
+        (asserts! (< stacks-block-time (get escalation-deadline escalation)) ERR_ESCALATION_PERIOD_EXPIRED)
+
+        ;; Assign the senior arbiter
+        (map-set dispute-escalations escrow-id (merge escalation {
+            escalation-arbiter: (some senior-arbiter)
+        }))
+
+        (print {
+            event: "senior-arbiter-assigned",
+            escrow-id: escrow-id,
+            arbiter: senior-arbiter,
+            timestamp: stacks-block-time
+        })
+        (ok true)))
+
+;; Resolve escalated dispute
+(define-public (resolve-escalated-dispute (escrow-id uint) (winner principal))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (escalation (unwrap! (map-get? dispute-escalations escrow-id) ERR_ESCALATION_NOT_ALLOWED)))
+        ;; Only assigned senior arbiter can resolve
+        (asserts! (match (get escalation-arbiter escalation)
+                    assigned-arbiter (is-eq tx-sender assigned-arbiter)
+                    false)
+                  ERR_NOT_AUTHORIZED)
+        ;; Verify winner is either buyer or seller
+        (asserts! (or (is-eq winner (get buyer escrow))
+                      (is-eq winner (get seller escrow)))
+                  ERR_NOT_AUTHORIZED)
+
+        ;; Calculate fees
+        (let ((dispute-fee (/ (* (get amount escrow) DISPUTE_FEE_BPS) u10000))
+              (payout (- (get amount escrow) dispute-fee)))
+
+            ;; Transfer funds
+            (try! (stx-transfer? payout (var-get contract-principal) winner))
+            (var-set total-fees-collected (+ (var-get total-fees-collected) dispute-fee))
+
+            ;; Update escrow status
+            (map-set escrows escrow-id (merge escrow {
+                status: STATUS_RESOLVED
+            }))
+
+            ;; Emit Chainhook event
+            (print {
+                event: "escalated-dispute-resolved",
+                escrow-id: escrow-id,
+                winner: winner,
+                payout: payout,
+                fee: dispute-fee,
+                arbiter: tx-sender,
+                timestamp: stacks-block-time
+            })
+            (ok true))))
+
+;; Authorize a senior arbiter
+(define-public (authorize-senior-arbiter (arbiter principal))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+        (map-set senior-arbiters arbiter true)
+        (print { event: "senior-arbiter-authorized", arbiter: arbiter, by: tx-sender })
+        (ok true)))
+
+;; Revoke senior arbiter authorization
+(define-public (revoke-senior-arbiter (arbiter principal))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+        (map-set senior-arbiters arbiter false)
+        (print { event: "senior-arbiter-revoked", arbiter: arbiter, by: tx-sender })
+        (ok true)))
+
+;; Get escalation details
+(define-read-only (get-escalation (escrow-id uint))
+    (map-get? dispute-escalations escrow-id))
+
+;; Check if dispute can be escalated
+(define-read-only (can-escalate (escrow-id uint))
+    (match (map-get? escrows escrow-id)
+        escrow (and (is-eq (get status escrow) STATUS_DISPUTED)
+                   (is-none (map-get? dispute-escalations escrow-id)))
+        false))
+
+;; Get escalation statistics
+(define-read-only (get-escalation-stats)
+    {
+        total-escalations: (var-get total-escalations),
+        escalation-period: (var-get escalation-period)
+    })
