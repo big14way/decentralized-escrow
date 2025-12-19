@@ -16,6 +16,8 @@
 (define-constant ERR_ALREADY_ESCALATED (err u20009))
 (define-constant ERR_ESCALATION_NOT_ALLOWED (err u20010))
 (define-constant ERR_ESCALATION_PERIOD_EXPIRED (err u20011))
+(define-constant ERR_PARTIAL_REFUND_EXCEEDS_AMOUNT (err u20012))
+(define-constant ERR_NOTHING_TO_REFUND (err u20013))
 
 ;; Escrow status
 (define-constant STATUS_PENDING u0)
@@ -58,7 +60,9 @@
         funded-at: (optional uint),
         status: uint,
         dispute-reason: (optional (string-ascii 256)),
-        arbiter: (optional principal)
+        arbiter: (optional principal),
+        total-refunded: uint,
+        remaining-amount: uint
     }
 )
 
@@ -217,7 +221,9 @@
             funded-at: none,
             status: STATUS_PENDING,
             dispute-reason: none,
-            arbiter: none
+            arbiter: none,
+            total-refunded: u0,
+            remaining-amount: amount
         })
         
         ;; Update counters
@@ -621,3 +627,140 @@
         total-escalations: (var-get total-escalations),
         escalation-period: (var-get escalation-period)
     })
+
+;; ========================================
+;; Partial Refund Functions
+;; ========================================
+
+;; Issue a partial refund (seller can refund part of escrow to buyer)
+(define-public (partial-refund (escrow-id uint) (refund-amount uint) (reason (string-ascii 256)))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (current-time stacks-block-time)
+          (new-refunded-total (+ (get total-refunded escrow) refund-amount))
+          (new-remaining (- (get remaining-amount escrow) refund-amount)))
+        ;; Validations
+        (asserts! (is-eq tx-sender (get seller escrow)) ERR_NOT_AUTHORIZED)
+        (asserts! (is-eq (get status escrow) STATUS_FUNDED) ERR_NOT_FUNDED)
+        (asserts! (> refund-amount u0) ERR_INVALID_AMOUNT)
+        (asserts! (<= refund-amount (get remaining-amount escrow)) ERR_PARTIAL_REFUND_EXCEEDS_AMOUNT)
+        (asserts! (> (get remaining-amount escrow) u0) ERR_NOTHING_TO_REFUND)
+
+        ;; Transfer partial refund to buyer
+        (try! (stx-transfer? refund-amount (var-get contract-principal) (get buyer escrow)))
+
+        ;; Update escrow tracking
+        (map-set escrows escrow-id (merge escrow {
+            total-refunded: new-refunded-total,
+            remaining-amount: new-remaining
+        }))
+
+        ;; Emit Chainhook event
+        (print {
+            event: "partial-refund-issued",
+            escrow-id: escrow-id,
+            buyer: (get buyer escrow),
+            seller: tx-sender,
+            refund-amount: refund-amount,
+            total-refunded: new-refunded-total,
+            remaining-amount: new-remaining,
+            reason: reason,
+            timestamp: current-time
+        })
+        (ok new-remaining)))
+
+;; Release remaining escrow amount after partial refunds
+(define-public (release-remaining (escrow-id uint))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (current-time stacks-block-time)
+          (remaining (get remaining-amount escrow))
+          (fee (calculate-fee remaining))
+          (seller-amount (- remaining fee)))
+        ;; Validations
+        (asserts! (is-eq tx-sender (get buyer escrow)) ERR_NOT_AUTHORIZED)
+        (asserts! (is-eq (get status escrow) STATUS_FUNDED) ERR_NOT_FUNDED)
+        (asserts! (> remaining u0) ERR_NOTHING_TO_REFUND)
+
+        ;; Transfer remaining amount to seller (minus fee)
+        (try! (stx-transfer? seller-amount (var-get contract-principal) (get seller escrow)))
+        (try! (stx-transfer? fee (var-get contract-principal) CONTRACT_OWNER))
+
+        ;; Update escrow status
+        (map-set escrows escrow-id (merge escrow {
+            status: STATUS_RELEASED,
+            remaining-amount: u0
+        }))
+
+        ;; Update stats
+        (var-set active-escrows (- (var-get active-escrows) u1))
+        (var-set total-volume (+ (var-get total-volume) (get amount escrow)))
+        (var-set total-fees-collected (+ (var-get total-fees-collected) fee))
+        (update-user-stats-complete (get buyer escrow) fee)
+        (update-user-stats-complete (get seller escrow) u0)
+
+        ;; Emit events
+        (print {
+            event: "remaining-released",
+            escrow-id: escrow-id,
+            buyer: (get buyer escrow),
+            seller: (get seller escrow),
+            amount: seller-amount,
+            fee: fee,
+            total-refunded: (get total-refunded escrow),
+            timestamp: current-time
+        })
+        (print {
+            event: "fee-collected",
+            escrow-id: escrow-id,
+            fee-type: "release-remaining",
+            amount: fee,
+            timestamp: current-time
+        })
+        (ok seller-amount)))
+
+;; Refund all remaining amount (cancellation after partial refunds)
+(define-public (refund-remaining (escrow-id uint))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (current-time stacks-block-time)
+          (remaining (get remaining-amount escrow)))
+        ;; Validations
+        (asserts! (or (is-eq tx-sender (get seller escrow))
+                     (and (is-eq tx-sender (get buyer escrow))
+                          (> current-time (get expires-at escrow))))
+                  ERR_NOT_AUTHORIZED)
+        (asserts! (is-eq (get status escrow) STATUS_FUNDED) ERR_NOT_FUNDED)
+        (asserts! (> remaining u0) ERR_NOTHING_TO_REFUND)
+
+        ;; Refund remaining to buyer
+        (try! (stx-transfer? remaining (var-get contract-principal) (get buyer escrow)))
+
+        ;; Update escrow
+        (map-set escrows escrow-id (merge escrow {
+            status: STATUS_REFUNDED,
+            remaining-amount: u0,
+            total-refunded: (+ (get total-refunded escrow) remaining)
+        }))
+        (var-set active-escrows (- (var-get active-escrows) u1))
+
+        ;; Emit event
+        (print {
+            event: "remaining-refunded",
+            escrow-id: escrow-id,
+            buyer: (get buyer escrow),
+            seller: (get seller escrow),
+            amount: remaining,
+            total-refunded: (+ (get total-refunded escrow) remaining),
+            reason: (if (is-eq tx-sender (get seller escrow)) "seller-cancelled" "expired"),
+            timestamp: current-time
+        })
+        (ok remaining)))
+
+;; Get refund summary for an escrow
+(define-read-only (get-refund-summary (escrow-id uint))
+    (match (map-get? escrows escrow-id)
+        escrow (some {
+            original-amount: (get amount escrow),
+            total-refunded: (get total-refunded escrow),
+            remaining-amount: (get remaining-amount escrow),
+            refund-percentage: (/ (* (get total-refunded escrow) u10000) (get amount escrow))
+        })
+        none))
