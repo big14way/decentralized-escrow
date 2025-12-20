@@ -764,3 +764,24 @@
             refund-percentage: (/ (* (get total-refunded escrow) u10000) (get amount escrow))
         })
         none))
+
+;; Community voting for disputes (3 arbiters vote)
+(define-map arbiter-votes { escrow-id: uint, arbiter: principal } { vote-for-buyer: bool, voted-at: uint })
+(define-map dispute-vote-counts uint { buyer-votes: uint, seller-votes: uint, total-votes: uint })
+
+(define-public (cast-arbiter-vote (escrow-id uint) (vote-for-buyer bool))
+    (let ((escrow (unwrap! (map-get? escrows escrow-id) ERR_ESCROW_NOT_FOUND))
+          (counts (default-to { buyer-votes: u0, seller-votes: u0, total-votes: u0 } (map-get? dispute-vote-counts escrow-id))))
+        (asserts! (is-eq (get status escrow) STATUS_DISPUTED) ERR_INVALID_STATE)
+        (asserts! (is-none (map-get? arbiter-votes { escrow-id: escrow-id, arbiter: tx-sender })) ERR_INVALID_STATE)
+        (map-set arbiter-votes { escrow-id: escrow-id, arbiter: tx-sender } { vote-for-buyer: vote-for-buyer, voted-at: stacks-block-time })
+        (map-set dispute-vote-counts escrow-id {
+            buyer-votes: (if vote-for-buyer (+ (get buyer-votes counts) u1) (get buyer-votes counts)),
+            seller-votes: (if vote-for-buyer (get seller-votes counts) (+ (get seller-votes counts) u1)),
+            total-votes: (+ (get total-votes counts) u1)
+        })
+        (print { event: "arbiter-vote-cast", escrow-id: escrow-id, arbiter: tx-sender, vote-for-buyer: vote-for-buyer, timestamp: stacks-block-time })
+        (ok true)))
+
+(define-read-only (get-vote-results (escrow-id uint))
+    (map-get? dispute-vote-counts escrow-id))
