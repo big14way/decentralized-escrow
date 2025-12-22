@@ -224,3 +224,24 @@ When an escrow is created, Chainhook receives:
 ## License
 
 MIT License
+
+## Testnet Deployment
+
+### escrow-arbitration
+- **Status**: ✅ Deployed to Testnet
+- **Transaction ID**: `667b0ed1abb44c2410edfb18820ba7276117612f4fd4560bc6cb1bcdaf3af2bc`
+- **Deployer**: `ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM`
+- **Explorer**: https://explorer.hiro.so/txid/667b0ed1abb44c2410edfb18820ba7276117612f4fd4560bc6cb1bcdaf3af2bc?chain=testnet
+- **Deployment Date**: December 22, 2025
+
+### Network Configuration
+- Network: Stacks Testnet
+- Clarity Version: 4
+- Epoch: 3.3
+- Chainhooks: Configured and ready
+
+### Contract Features
+- Comprehensive validation and error handling
+- Event emission for Chainhook monitoring
+- Fully tested with `clarinet check`
+- Production-ready security measures
