@@ -1,0 +1,24 @@
+{
+  "chain": "stacks",
+  "uuid": "escrow-arbitration-v1",
+  "name": "escrow-arbitration Events",
+  "version": 1,
+  "networks": {
+    "testnet": {
+      "start_block": 1,
+      "if_this": {
+        "scope": "print_event",
+        "contract_identifier": "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.escrow-arbitration",
+        "contains": "event"
+      },
+      "then_that": {
+        "http_post": {
+          "url": "http://localhost:3000/api/events/escrow-arbitration",
+          "authorization_header": "Bearer API_KEY"
+        }
+      }
+    }
+  },
+  "decode_clarity_values": true,
+  "enabled": true
+}

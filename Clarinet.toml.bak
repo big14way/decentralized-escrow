@@ -16,12 +16,6 @@ path = "contracts/escrow-analytics.clar"
 clarity_version = 4
 epoch = 3.3
 
-[contracts.escrow-arbitration]
-path = "contracts/escrow-arbitration.clar"
-clarity_version = 4
-epoch = 3.3
-
-
 [repl.analysis]
 passes = ["check_checker"]
 
