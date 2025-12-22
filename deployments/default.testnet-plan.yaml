@@ -11,14 +11,21 @@ plan:
         - contract-publish:
             contract-name: escrow-analytics
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 13065179
+            cost: 12141272
             path: contracts/escrow-analytics.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: escrow-arbitration
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 12145639
+            path: contracts/escrow-arbitration.clar
             anchor-block-only: true
             clarity-version: 4
         - contract-publish:
             contract-name: escrow-manager
             expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            cost: 13180301
+            cost: 12392351
             path: contracts/escrow-manager.clar
             anchor-block-only: true
             clarity-version: 4
