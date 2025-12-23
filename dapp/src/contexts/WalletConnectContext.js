@@ -6,7 +6,9 @@ import { WALLET_CONNECT_PROJECT_ID, NETWORK_CONFIG, APP_METADATA } from '../conf
 const WalletConnectContext = createContext();
 
 // Enable BigInt serialization
+/* eslint-disable no-extend-native, no-undef */
 BigInt.prototype.toJSON = function() { return this.toString(); };
+/* eslint-enable no-extend-native, no-undef */
 
 export const useWalletConnect = () => {
   const context = useContext(WalletConnectContext);
@@ -145,6 +147,7 @@ export const WalletConnectProvider = ({ children }) => {
     }
 
     try {
+      /* eslint-disable no-undef */
       const result = await client.request({
         chainId,
         topic: session.topic,
@@ -157,6 +160,7 @@ export const WalletConnectProvider = ({ children }) => {
           },
         },
       });
+      /* eslint-enable no-undef */
       return result;
     } catch (err) {
       console.error('Transfer failed:', err);
