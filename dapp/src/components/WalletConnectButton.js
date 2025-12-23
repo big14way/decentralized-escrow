@@ -5,10 +5,12 @@ import '../styles/WalletConnectButton.css';
 const WalletConnectButton = () => {
   const { account, isConnecting, connect, disconnect, isConnected } = useWalletConnect();
 
-  if (isConnected) {
+  if (isConnected && account) {
     return (
       <div className="wallet-connected">
-        <span className="address">{account.slice(0, 8)}...{account.slice(-6)}</span>
+        <span className="wallet-address">
+          {account.slice(0, 8)}...{account.slice(-6)}
+        </span>
         <button onClick={disconnect} className="disconnect-btn">
           Disconnect
         </button>
