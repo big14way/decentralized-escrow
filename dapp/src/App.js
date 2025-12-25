@@ -11,6 +11,7 @@ import TransactionHistory from './components/TransactionHistory';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import NFTGallery from './components/NFTGallery';
 import TokenPortfolio from './components/TokenPortfolio';
+import MultiSigManager from './components/MultiSigManager';
 import './styles/App.css';
 
 function App() {
@@ -28,6 +29,8 @@ function App() {
           <NetworkStatus />
 
           <AnalyticsDashboard />
+
+          <MultiSigManager />
 
           <TokenPortfolio />
 
