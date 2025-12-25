@@ -25,6 +25,9 @@ body {
   padding: 1.5rem 2rem;
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
@@ -58,6 +61,13 @@ body {
   margin: 2rem 0;
 }
 
+.advanced-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
 .App-footer {
   background: #2c3e50;
   color: white;
@@ -75,6 +85,10 @@ body {
   .header-content {
     flex-direction: column;
     text-align: center;
+  }
+
+  .App-header {
+    position: relative;
   }
 
   .App-main {

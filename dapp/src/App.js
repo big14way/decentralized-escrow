@@ -6,6 +6,8 @@ import ContractInteraction from './components/ContractInteraction';
 import AccountInfo from './components/AccountInfo';
 import STXTransfer from './components/STXTransfer';
 import ContractViewer from './components/ContractViewer';
+import TransactionBuilder from './components/TransactionBuilder';
+import TransactionHistory from './components/TransactionHistory';
 import './styles/App.css';
 
 function App() {
@@ -29,7 +31,12 @@ function App() {
             <ContractInteraction />
           </div>
 
-          <ContractViewer />
+          <TransactionBuilder />
+
+          <div className="advanced-section">
+            <ContractViewer />
+            <TransactionHistory />
+          </div>
         </main>
 
         <footer className="App-footer">

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useWalletConnect } from '../contexts/WalletConnectContext';
 import { CONTRACT_CONFIG } from '../config/stacksConfig';
 import '../styles/ContractViewer.css';
 
