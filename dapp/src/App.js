@@ -10,6 +10,7 @@ import TransactionBuilder from './components/TransactionBuilder';
 import TransactionHistory from './components/TransactionHistory';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import NFTGallery from './components/NFTGallery';
+import TokenPortfolio from './components/TokenPortfolio';
 import './styles/App.css';
 
 function App() {
@@ -27,6 +28,8 @@ function App() {
           <NetworkStatus />
 
           <AnalyticsDashboard />
+
+          <TokenPortfolio />
 
           <NFTGallery />
 
