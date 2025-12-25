@@ -8,6 +8,7 @@ import STXTransfer from './components/STXTransfer';
 import ContractViewer from './components/ContractViewer';
 import TransactionBuilder from './components/TransactionBuilder';
 import TransactionHistory from './components/TransactionHistory';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import './styles/App.css';
 
 function App() {
@@ -23,6 +24,8 @@ function App() {
 
         <main className="App-main">
           <NetworkStatus />
+
+          <AnalyticsDashboard />
 
           <AccountInfo />
 
