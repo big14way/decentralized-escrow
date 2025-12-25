@@ -9,6 +9,7 @@ import ContractViewer from './components/ContractViewer';
 import TransactionBuilder from './components/TransactionBuilder';
 import TransactionHistory from './components/TransactionHistory';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import NFTGallery from './components/NFTGallery';
 import './styles/App.css';
 
 function App() {
@@ -26,6 +27,8 @@ function App() {
           <NetworkStatus />
 
           <AnalyticsDashboard />
+
+          <NFTGallery />
 
           <AccountInfo />
 
