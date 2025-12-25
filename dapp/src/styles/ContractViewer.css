@@ -1,0 +1,254 @@
+.contract-viewer {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contract-viewer h2 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.contract-viewer h3 {
+  color: #34495e;
+  font-size: 1.25rem;
+  margin: 2rem 0 1rem 0;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.contract-details {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #5a6c7d;
+}
+
+.detail-value {
+  color: #2c3e50;
+  font-family: 'Courier New', monospace;
+}
+
+.contract-address {
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.status-badge {
+  background: #d4edda;
+  color: #155724;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.functions-section {
+  margin: 2rem 0;
+}
+
+.functions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.function-item {
+  border: 2px solid #e0e0e0;
+  padding: 1.25rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.function-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.function-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.function-name {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.function-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.call-function-btn {
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.call-function-btn:hover:not(:disabled) {
+  background: #764ba2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.call-function-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.function-result {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.function-result strong {
+  color: #155724;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.function-result pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  color: #155724;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.function-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.function-error strong {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.no-functions {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.source-section {
+  margin-top: 2rem;
+}
+
+.source-section details {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.source-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #667eea;
+  padding: 0.5rem;
+  user-select: none;
+}
+
+.source-section summary:hover {
+  color: #764ba2;
+}
+
+.contract-source {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 1.5rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-top: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.explorer-link {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.explorer-link a {
+  display: inline-block;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.explorer-link a:hover {
+  color: #764ba2;
+  transform: translateX(5px);
+}
+
+@media (max-width: 768px) {
+  .contract-viewer {
+    padding: 1rem;
+    margin: 1rem;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .function-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

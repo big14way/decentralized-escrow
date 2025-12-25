@@ -1,9 +1,11 @@
 import React from 'react';
 import { WalletConnectProvider } from './contexts/WalletConnectContext';
 import WalletConnectButton from './components/WalletConnectButton';
+import NetworkStatus from './components/NetworkStatus';
 import ContractInteraction from './components/ContractInteraction';
 import AccountInfo from './components/AccountInfo';
 import STXTransfer from './components/STXTransfer';
+import ContractViewer from './components/ContractViewer';
 import './styles/App.css';
 
 function App() {
@@ -11,21 +13,27 @@ function App() {
     <WalletConnectProvider>
       <div className="App">
         <header className="App-header">
-          <h1>Stacks dApp</h1>
-          <WalletConnectButton />
+          <div className="header-content">
+            <h1>Stacks dApp</h1>
+            <WalletConnectButton />
+          </div>
         </header>
 
         <main className="App-main">
+          <NetworkStatus />
+
           <AccountInfo />
 
           <div className="features-grid">
             <STXTransfer />
             <ContractInteraction />
           </div>
+
+          <ContractViewer />
         </main>
 
         <footer className="App-footer">
-          <p>Built on Stacks • Testnet</p>
+          <p>Built on Stacks • Testnet • Powered by Clarity Smart Contracts</p>
         </footer>
       </div>
     </WalletConnectProvider>
