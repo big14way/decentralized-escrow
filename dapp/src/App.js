@@ -14,6 +14,7 @@ import TokenPortfolio from './components/TokenPortfolio';
 import MultiSigManager from './components/MultiSigManager';
 import SettingsPanel from './components/SettingsPanel';
 import ActivityFeed from './components/ActivityFeed';
+import NotificationCenter from './components/NotificationCenter';
 import './styles/App.css';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <MultiSigManager />
         <SettingsPanel />
         <ActivityFeed />
+        <NotificationCenter />
 
           <TokenPortfolio />
 
