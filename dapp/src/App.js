@@ -18,6 +18,7 @@ import NotificationCenter from './components/NotificationCenter';
 import QuickActions from './components/QuickActions';
 import SearchFilter from './components/SearchFilter';
 import HelpCenter from './components/HelpCenter';
+import WalletManager from './components/WalletManager';
 import './styles/App.css';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
         <QuickActions />
         <SearchFilter />
         <HelpCenter />
+        <WalletManager />
 
           <TokenPortfolio />
 
