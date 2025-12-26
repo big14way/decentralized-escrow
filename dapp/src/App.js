@@ -13,6 +13,7 @@ import NFTGallery from './components/NFTGallery';
 import TokenPortfolio from './components/TokenPortfolio';
 import MultiSigManager from './components/MultiSigManager';
 import SettingsPanel from './components/SettingsPanel';
+import ActivityFeed from './components/ActivityFeed';
 import './styles/App.css';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
 
           <MultiSigManager />
         <SettingsPanel />
+        <ActivityFeed />
 
           <TokenPortfolio />
 
