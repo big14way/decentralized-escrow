@@ -16,6 +16,7 @@ import SettingsPanel from './components/SettingsPanel';
 import ActivityFeed from './components/ActivityFeed';
 import NotificationCenter from './components/NotificationCenter';
 import QuickActions from './components/QuickActions';
+import SearchFilter from './components/SearchFilter';
 import './styles/App.css';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
         <ActivityFeed />
         <NotificationCenter />
         <QuickActions />
+        <SearchFilter />
 
           <TokenPortfolio />
 
