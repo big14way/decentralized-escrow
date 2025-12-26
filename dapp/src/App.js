@@ -17,6 +17,7 @@ import ActivityFeed from './components/ActivityFeed';
 import NotificationCenter from './components/NotificationCenter';
 import QuickActions from './components/QuickActions';
 import SearchFilter from './components/SearchFilter';
+import HelpCenter from './components/HelpCenter';
 import './styles/App.css';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
         <NotificationCenter />
         <QuickActions />
         <SearchFilter />
+        <HelpCenter />
 
           <TokenPortfolio />
 
