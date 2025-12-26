@@ -19,6 +19,7 @@ import QuickActions from './components/QuickActions';
 import SearchFilter from './components/SearchFilter';
 import HelpCenter from './components/HelpCenter';
 import WalletManager from './components/WalletManager';
+import PerformanceMonitor from './components/PerformanceMonitor';
 import './styles/App.css';
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
         <SearchFilter />
         <HelpCenter />
         <WalletManager />
+        <PerformanceMonitor />
 
           <TokenPortfolio />
 
