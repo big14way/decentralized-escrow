@@ -17,6 +17,14 @@ const ThemeCustomizer = () => {
   const [borderRadius, setBorderRadius] = useState(8);
   const [spacing, setSpacing] = useState(20);
   const [animations, setAnimations] = useState(true);
+  const [autoDetectDarkMode, setAutoDetectDarkMode] = useState(false);
+  const [gradientEnabled, setGradientEnabled] = useState(false);
+  const [gradientAngle, setGradientAngle] = useState(135);
+  const [shadowIntensity, setShadowIntensity] = useState(1);
+  const [showColorPicker, setShowColorPicker] = useState(null);
+  const [colorBrightness, setColorBrightness] = useState(100);
+  const [colorSaturation, setColorSaturation] = useState(100);
+  const [themeCategory, setThemeCategory] = useState('all');
   const [customTheme, setCustomTheme] = useState({
     primary: '#3498db',
     secondary: '#2ecc71',
@@ -26,11 +34,20 @@ const ThemeCustomizer = () => {
     cardBg: '#f8f9fa'
   });
 
+  const themeCategories = {
+    all: { name: 'All Themes', icon: '🎨' },
+    light: { name: 'Light', icon: '☀️' },
+    dark: { name: 'Dark', icon: '🌙' },
+    colorful: { name: 'Colorful', icon: '🌈' },
+    professional: { name: 'Professional', icon: '💼' }
+  };
+
   const presetThemes = [
     {
       id: 'default',
       name: 'Default Blue',
       icon: '🔵',
+      category: 'professional',
       colors: {
         primary: '#3498db',
         secondary: '#2ecc71',
@@ -44,6 +61,7 @@ const ThemeCustomizer = () => {
       id: 'dark',
       name: 'Dark Mode',
       icon: '🌙',
+      category: 'dark',
       colors: {
         primary: '#3498db',
         secondary: '#2ecc71',
@@ -57,6 +75,7 @@ const ThemeCustomizer = () => {
       id: 'purple',
       name: 'Purple Dream',
       icon: '💜',
+      category: 'colorful',
       colors: {
         primary: '#9b59b6',
         secondary: '#8e44ad',
@@ -70,6 +89,7 @@ const ThemeCustomizer = () => {
       id: 'ocean',
       name: 'Ocean Breeze',
       icon: '🌊',
+      category: 'colorful',
       colors: {
         primary: '#1abc9c',
         secondary: '#16a085',
@@ -83,6 +103,7 @@ const ThemeCustomizer = () => {
       id: 'sunset',
       name: 'Sunset',
       icon: '🌅',
+      category: 'colorful',
       colors: {
         primary: '#e67e22',
         secondary: '#d35400',
@@ -96,6 +117,7 @@ const ThemeCustomizer = () => {
       id: 'forest',
       name: 'Forest',
       icon: '🌲',
+      category: 'colorful',
       colors: {
         primary: '#27ae60',
         secondary: '#229954',
@@ -109,6 +131,7 @@ const ThemeCustomizer = () => {
       id: 'midnight',
       name: 'Midnight',
       icon: '🌃',
+      category: 'dark',
       colors: {
         primary: '#34495e',
         secondary: '#2c3e50',
@@ -122,6 +145,7 @@ const ThemeCustomizer = () => {
       id: 'cherry',
       name: 'Cherry Blossom',
       icon: '🌸',
+      category: 'light',
       colors: {
         primary: '#ff6b9d',
         secondary: '#c23866',
@@ -130,8 +154,86 @@ const ThemeCustomizer = () => {
         text: '#2c3e50',
         cardBg: '#fff0f5'
       }
+    },
+    {
+      id: 'corporate',
+      name: 'Corporate',
+      icon: '💼',
+      category: 'professional',
+      colors: {
+        primary: '#2c3e50',
+        secondary: '#34495e',
+        accent: '#3498db',
+        background: '#ffffff',
+        text: '#2c3e50',
+        cardBg: '#ecf0f1'
+      }
+    },
+    {
+      id: 'neon',
+      name: 'Neon Nights',
+      icon: '⚡',
+      category: 'dark',
+      colors: {
+        primary: '#00ff88',
+        secondary: '#00ccff',
+        accent: '#ff00ff',
+        background: '#0a0a0a',
+        text: '#ffffff',
+        cardBg: '#1a1a1a'
+      }
+    },
+    {
+      id: 'autumn',
+      name: 'Autumn Leaves',
+      icon: '🍂',
+      category: 'colorful',
+      colors: {
+        primary: '#d35400',
+        secondary: '#e67e22',
+        accent: '#c0392b',
+        background: '#fef9f3',
+        text: '#2c3e50',
+        cardBg: '#fdebd0'
+      }
+    },
+    {
+      id: 'minimalist',
+      name: 'Minimalist',
+      icon: '⚪',
+      category: 'professional',
+      colors: {
+        primary: '#333333',
+        secondary: '#666666',
+        accent: '#999999',
+        background: '#ffffff',
+        text: '#333333',
+        cardBg: '#f5f5f5'
+      }
     }
   ];
+
+  // Auto-detect system dark mode preference
+  useEffect(() => {
+    if (autoDetectDarkMode) {
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleDarkModeChange = (e) => {
+        const darkTheme = presetThemes.find(t => t.category === 'dark');
+        const lightTheme = presetThemes.find(t => t.id === 'default');
+        const theme = e.matches ? darkTheme : lightTheme;
+        if (theme) {
+          setSelectedTheme(theme.id);
+          setCustomTheme(theme.colors);
+          applyTheme(theme.colors);
+        }
+      };
+
+      handleDarkModeChange(darkModeMediaQuery);
+      darkModeMediaQuery.addEventListener('change', handleDarkModeChange);
+
+      return () => darkModeMediaQuery.removeEventListener('change', handleDarkModeChange);
+    }
+  }, [autoDetectDarkMode]);
 
   // Calculate relative luminance for contrast checking
   const getLuminance = (hex) => {
@@ -154,6 +256,50 @@ const ThemeCustomizer = () => {
     const lighter = Math.max(lum1, lum2);
     const darker = Math.min(lum1, lum2);
     return (lighter + 0.05) / (darker + 0.05);
+  };
+
+  // Adjust color brightness
+  const adjustBrightness = (hex, percent) => {
+    const num = parseInt(hex.slice(1), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+    const G = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amt));
+    const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+    return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+  };
+
+  // Adjust color saturation
+  const adjustSaturation = (hex, percent) => {
+    const rgb = parseInt(hex.slice(1), 16);
+    let r = (rgb >> 16) & 0xff;
+    let g = (rgb >> 8) & 0xff;
+    let b = rgb & 0xff;
+
+    const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b;
+    const factor = percent / 100;
+
+    r = Math.round(gray + (r - gray) * factor);
+    g = Math.round(gray + (g - gray) * factor);
+    b = Math.round(gray + (b - gray) * factor);
+
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+
+  // Apply brightness and saturation adjustments
+  const applyColorAdjustments = () => {
+    const adjusted = {};
+    Object.keys(customTheme).forEach(key => {
+      let color = customTheme[key];
+      if (colorBrightness !== 100) {
+        const brightDiff = (colorBrightness - 100) * 0.5;
+        color = adjustBrightness(color, brightDiff);
+      }
+      if (colorSaturation !== 100) {
+        color = adjustSaturation(color, colorSaturation);
+      }
+      adjusted[key] = color;
+    });
+    return adjusted;
   };
 
   // Check contrast compliance
@@ -197,7 +343,6 @@ const ThemeCustomizer = () => {
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
 
-    // Convert to HSL
     const rNorm = r / 255;
     const gNorm = g / 255;
     const bNorm = b / 255;
@@ -302,6 +447,10 @@ const ThemeCustomizer = () => {
         setSpacing(parsed.spacing || 20);
         setAnimations(parsed.animations !== false);
         setSelectedTheme(parsed.themeId || 'default');
+        setGradientEnabled(parsed.gradientEnabled || false);
+        setGradientAngle(parsed.gradientAngle || 135);
+        setShadowIntensity(parsed.shadowIntensity || 1);
+        setAutoDetectDarkMode(parsed.autoDetectDarkMode || false);
       } catch (e) {
         console.error('Failed to load theme settings', e);
       }
@@ -314,25 +463,32 @@ const ThemeCustomizer = () => {
   }, [customTheme, checkContrast]);
 
   const applyTheme = (theme = customTheme, preview = false) => {
+    const adjustedTheme = colorBrightness === 100 && colorSaturation === 100 ? theme : applyColorAdjustments();
     const root = document.documentElement;
+
     if (preview) {
-      root.style.setProperty('--preview-primary', theme.primary);
-      root.style.setProperty('--preview-secondary', theme.secondary);
-      root.style.setProperty('--preview-accent', theme.accent);
-      root.style.setProperty('--preview-background', theme.background);
-      root.style.setProperty('--preview-text', theme.text);
-      root.style.setProperty('--preview-card-bg', theme.cardBg);
+      root.style.setProperty('--preview-primary', adjustedTheme.primary);
+      root.style.setProperty('--preview-secondary', adjustedTheme.secondary);
+      root.style.setProperty('--preview-accent', adjustedTheme.accent);
+      root.style.setProperty('--preview-background', adjustedTheme.background);
+      root.style.setProperty('--preview-text', adjustedTheme.text);
+      root.style.setProperty('--preview-card-bg', adjustedTheme.cardBg);
     } else {
-      root.style.setProperty('--primary-color', theme.primary);
-      root.style.setProperty('--secondary-color', theme.secondary);
-      root.style.setProperty('--accent-color', theme.accent);
-      root.style.setProperty('--background-color', theme.background);
-      root.style.setProperty('--text-color', theme.text);
-      root.style.setProperty('--card-bg', theme.cardBg);
+      if (gradientEnabled) {
+        root.style.setProperty('--primary-color', `linear-gradient(${gradientAngle}deg, ${adjustedTheme.primary}, ${adjustedTheme.secondary})`);
+      } else {
+        root.style.setProperty('--primary-color', adjustedTheme.primary);
+      }
+      root.style.setProperty('--secondary-color', adjustedTheme.secondary);
+      root.style.setProperty('--accent-color', adjustedTheme.accent);
+      root.style.setProperty('--background-color', adjustedTheme.background);
+      root.style.setProperty('--text-color', adjustedTheme.text);
+      root.style.setProperty('--card-bg', adjustedTheme.cardBg);
       root.style.setProperty('--base-font-size', `${fontSize}px`);
       root.style.setProperty('--border-radius', `${borderRadius}px`);
       root.style.setProperty('--base-spacing', `${spacing}px`);
       root.style.setProperty('--animation-duration', animations ? '0.3s' : '0s');
+      root.style.setProperty('--shadow-intensity', shadowIntensity);
       saveThemeSettings();
     }
   };
@@ -344,7 +500,11 @@ const ThemeCustomizer = () => {
       fontSize,
       borderRadius,
       spacing,
-      animations
+      animations,
+      gradientEnabled,
+      gradientAngle,
+      shadowIntensity,
+      autoDetectDarkMode
     };
     localStorage.setItem('theme-settings', JSON.stringify(settings));
   };
@@ -385,8 +545,8 @@ const ThemeCustomizer = () => {
     const themeData = {
       name: themeName || 'Custom Theme',
       colors: customTheme,
-      layout: { fontSize, borderRadius, spacing, animations },
-      version: '1.0'
+      layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity },
+      version: '2.0'
     };
     const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -411,6 +571,9 @@ const ThemeCustomizer = () => {
               setBorderRadius(imported.layout.borderRadius || 8);
               setSpacing(imported.layout.spacing || 20);
               setAnimations(imported.layout.animations !== false);
+              setGradientEnabled(imported.layout.gradientEnabled || false);
+              setGradientAngle(imported.layout.gradientAngle || 135);
+              setShadowIntensity(imported.layout.shadowIntensity || 1);
             }
             setSelectedTheme('custom');
             applyTheme(imported.colors);
@@ -434,7 +597,7 @@ const ThemeCustomizer = () => {
       id: `custom-${Date.now()}`,
       name: themeName,
       colors: customTheme,
-      layout: { fontSize, borderRadius, spacing, animations },
+      layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity },
       createdAt: new Date().toISOString()
     };
 
@@ -452,6 +615,9 @@ const ThemeCustomizer = () => {
       setBorderRadius(theme.layout.borderRadius || 8);
       setSpacing(theme.layout.spacing || 20);
       setAnimations(theme.layout.animations !== false);
+      setGradientEnabled(theme.layout.gradientEnabled || false);
+      setGradientAngle(theme.layout.gradientAngle || 135);
+      setShadowIntensity(theme.layout.shadowIntensity || 1);
     }
     setSelectedTheme(theme.id);
     applyTheme(theme.colors);
@@ -466,7 +632,7 @@ const ThemeCustomizer = () => {
   const generateShareUrl = () => {
     const themeData = btoa(JSON.stringify({
       colors: customTheme,
-      layout: { fontSize, borderRadius, spacing, animations }
+      layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity }
     }));
     const url = `${window.location.origin}${window.location.pathname}?theme=${themeData}`;
     setShareUrl(url);
@@ -487,13 +653,18 @@ const ThemeCustomizer = () => {
       setBorderRadius(8);
       setSpacing(20);
       setAnimations(true);
+      setGradientEnabled(false);
+      setGradientAngle(135);
+      setShadowIntensity(1);
+      setColorBrightness(100);
+      setColorSaturation(100);
       applyTheme(defaultTheme.colors);
     }
   };
 
   useEffect(() => {
     applyTheme();
-  }, [fontSize, borderRadius, spacing, animations]);
+  }, [fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity, colorBrightness, colorSaturation]);
 
   // Load theme from URL on mount
   useEffect(() => {
@@ -509,6 +680,9 @@ const ThemeCustomizer = () => {
             setBorderRadius(decoded.layout.borderRadius || 8);
             setSpacing(decoded.layout.spacing || 20);
             setAnimations(decoded.layout.animations !== false);
+            setGradientEnabled(decoded.layout.gradientEnabled || false);
+            setGradientAngle(decoded.layout.gradientAngle || 135);
+            setShadowIntensity(decoded.layout.shadowIntensity || 1);
           }
           setSelectedTheme('custom');
           applyTheme(decoded.colors);
@@ -518,6 +692,10 @@ const ThemeCustomizer = () => {
       }
     }
   }, []);
+
+  const filteredThemes = themeCategory === 'all'
+    ? presetThemes
+    : presetThemes.filter(t => t.category === themeCategory);
 
   return (
     <>
@@ -557,6 +735,12 @@ const ThemeCustomizer = () => {
                 📐 Layout
               </button>
               <button
+                className={activeTab === 'advanced' ? 'active' : ''}
+                onClick={() => setActiveTab('advanced')}
+              >
+                ⚙️ Advanced
+              </button>
+              <button
                 className={activeTab === 'saved' ? 'active' : ''}
                 onClick={() => setActiveTab('saved')}
               >
@@ -573,9 +757,20 @@ const ThemeCustomizer = () => {
             <div className="theme-customizer-content">
               {activeTab === 'themes' && (
                 <div className="themes-tab">
-                  <h3>Preset Themes</h3>
+                  <div className="theme-category-filter">
+                    {Object.entries(themeCategories).map(([key, cat]) => (
+                      <button
+                        key={key}
+                        className={themeCategory === key ? 'active' : ''}
+                        onClick={() => setThemeCategory(key)}
+                      >
+                        {cat.icon} {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                  <h3>Preset Themes ({filteredThemes.length})</h3>
                   <div className="theme-grid">
-                    {presetThemes.map(theme => (
+                    {filteredThemes.map(theme => (
                       <div
                         key={theme.id}
                         className={`theme-card ${selectedTheme === theme.id ? 'active' : ''}`}
@@ -628,6 +823,29 @@ const ThemeCustomizer = () => {
                       <button onClick={applyColorHarmony} className="harmony-btn">
                         ✨ Generate Harmony
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="color-adjustments">
+                    <div className="adjustment-control">
+                      <label>Brightness: {colorBrightness}%</label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={colorBrightness}
+                        onChange={(e) => setColorBrightness(Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="adjustment-control">
+                      <label>Saturation: {colorSaturation}%</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={colorSaturation}
+                        onChange={(e) => setColorSaturation(Number(e.target.value))}
+                      />
                     </div>
                   </div>
 
@@ -700,6 +918,61 @@ const ThemeCustomizer = () => {
                       />
                       Enable Animations
                     </label>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'advanced' && (
+                <div className="advanced-tab">
+                  <h3>Advanced Settings</h3>
+
+                  <div className="advanced-control">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={autoDetectDarkMode}
+                        onChange={(e) => setAutoDetectDarkMode(e.target.checked)}
+                      />
+                      Auto-detect System Dark Mode
+                    </label>
+                    <p className="control-description">Automatically switch theme based on system preferences</p>
+                  </div>
+
+                  <div className="advanced-control">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={gradientEnabled}
+                        onChange={(e) => setGradientEnabled(e.target.checked)}
+                      />
+                      Enable Gradient Colors
+                    </label>
+                    <p className="control-description">Apply gradient effects to primary colors</p>
+                  </div>
+
+                  {gradientEnabled && (
+                    <div className="layout-control">
+                      <label>Gradient Angle: {gradientAngle}°</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={gradientAngle}
+                        onChange={(e) => setGradientAngle(Number(e.target.value))}
+                      />
+                    </div>
+                  )}
+
+                  <div className="layout-control">
+                    <label>Shadow Intensity: {shadowIntensity.toFixed(1)}x</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3"
+                      step="0.1"
+                      value={shadowIntensity}
+                      onChange={(e) => setShadowIntensity(Number(e.target.value))}
+                    />
                   </div>
                 </div>
               )}

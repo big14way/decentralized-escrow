@@ -36,7 +36,7 @@
 .theme-customizer-modal {
   background: white;
   width: 90%;
-  max-width: 900px;
+  max-width: 1000px;
   max-height: 90vh;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -90,12 +90,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: #6c757d;
   transition: all 0.3s ease;
   white-space: nowrap;
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .theme-customizer-tabs button:hover {
@@ -119,6 +119,34 @@
   margin: 0 0 20px 0;
   color: #2c3e50;
   font-size: 18px;
+}
+
+.theme-category-filter {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.theme-category-filter button {
+  padding: 8px 16px;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.theme-category-filter button:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.theme-category-filter button.active {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+  border-color: #ff6b6b;
 }
 
 .theme-grid {
@@ -257,6 +285,47 @@
   transform: scale(1.05);
 }
 
+.color-adjustments {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.adjustment-control {
+  margin-bottom: 16px;
+}
+
+.adjustment-control:last-child {
+  margin-bottom: 0;
+}
+
+.adjustment-control label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.adjustment-control input[type="range"] {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #e9ecef;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.adjustment-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  cursor: pointer;
+}
+
 .color-pickers {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -295,20 +364,30 @@
   text-transform: uppercase;
 }
 
-.layout-tab {
+.layout-tab,
+.advanced-tab {
   max-width: 600px;
 }
 
-.layout-control {
+.layout-control,
+.advanced-control {
   margin-bottom: 24px;
 }
 
-.layout-control label {
+.layout-control label,
+.advanced-control > label {
   display: block;
   margin-bottom: 10px;
   font-weight: 600;
   color: #2c3e50;
   font-size: 15px;
+}
+
+.control-description {
+  margin: 8px 0 0 0;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .layout-control input[type="range"] {
@@ -329,7 +408,8 @@
   cursor: pointer;
 }
 
-.layout-control input[type="checkbox"] {
+.layout-control input[type="checkbox"],
+.advanced-control input[type="checkbox"] {
   width: 20px;
   height: 20px;
   margin-right: 10px;
@@ -784,9 +864,9 @@
   }
 
   .theme-customizer-tabs button {
-    min-width: 100px;
-    padding: 14px 16px;
-    font-size: 13px;
+    min-width: 90px;
+    padding: 14px 12px;
+    font-size: 12px;
   }
 
   .theme-grid {
@@ -825,5 +905,14 @@
 
   .share-url-container {
     flex-direction: column;
+  }
+
+  .theme-category-filter {
+    justify-content: center;
+  }
+
+  .theme-category-filter button {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }
