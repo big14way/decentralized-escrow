@@ -20,6 +20,7 @@ import SearchFilter from './components/SearchFilter';
 import HelpCenter from './components/HelpCenter';
 import WalletManager from './components/WalletManager';
 import PerformanceMonitor from './components/PerformanceMonitor';
+import ThemeCustomizer from './components/ThemeCustomizer';
 import './styles/App.css';
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
         <HelpCenter />
         <WalletManager />
         <PerformanceMonitor />
+        <ThemeCustomizer />
 
           <TokenPortfolio />
 
