@@ -916,3 +916,260 @@
     padding: 6px 12px;
   }
 }
+
+/* New Ultimate Features CSS */
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.shortcuts-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.shortcuts-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.theme-search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.random-theme-btn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.random-theme-btn:hover {
+  transform: scale(1.05);
+}
+
+.favorite-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.2s ease;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.2);
+}
+
+.favorite-btn.active {
+  color: #f39c12;
+}
+
+.history-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.history-btn {
+  padding: 10px 20px;
+  border: 2px solid #dee2e6;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.history-btn:hover:not(:disabled) {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.history-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-info {
+  margin-left: auto;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.colorblind-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  margin-top: 8px;
+}
+
+.favorite-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.favorite-theme-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.favorite-theme-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: #f39c12;
+}
+
+.favorite-theme-card .theme-icon {
+  font-size: 32px;
+}
+
+.favorite-theme-card .theme-name {
+  font-size: 13px;
+  text-align: center;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.shortcuts-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1003;
+}
+
+.shortcuts-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.shortcuts-modal h3 {
+  margin: 0 0 24px 0;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.shortcut-item kbd {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shortcut-item span {
+  flex: 1;
+  color: #495057;
+  font-size: 14px;
+}
+
+.close-shortcuts-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.close-shortcuts-btn:hover {
+  transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .history-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-info {
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .shortcuts-modal {
+    width: 95%;
+    padding: 24px;
+  }
+
+  .shortcut-item {
+    flex-wrap: wrap;
+  }
+}

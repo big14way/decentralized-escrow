@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import '../styles/ThemeCustomizer.css';
 
 const ThemeCustomizer = () => {
@@ -21,10 +21,23 @@ const ThemeCustomizer = () => {
   const [gradientEnabled, setGradientEnabled] = useState(false);
   const [gradientAngle, setGradientAngle] = useState(135);
   const [shadowIntensity, setShadowIntensity] = useState(1);
-  const [showColorPicker, setShowColorPicker] = useState(null);
   const [colorBrightness, setColorBrightness] = useState(100);
   const [colorSaturation, setColorSaturation] = useState(100);
   const [themeCategory, setThemeCategory] = useState('all');
+
+  // New advanced features
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareThemes, setCompareThemes] = useState([null, null]);
+  const [colorBlindMode, setColorBlindMode] = useState('none');
+  const [themeHistory, setThemeHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [scheduledThemes, setScheduledThemes] = useState([]);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [favoriteThemes, setFavoriteThemes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [randomizeColors, setRandomizeColors] = useState(false);
+
   const [customTheme, setCustomTheme] = useState({
     primary: '#3498db',
     secondary: '#2ecc71',
@@ -212,6 +225,159 @@ const ThemeCustomizer = () => {
       }
     }
   ];
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Ctrl/Cmd + K to toggle theme customizer
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsOpen(prev => !prev);
+      }
+      // Ctrl/Cmd + Z to undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && isOpen) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl/Cmd + Shift + Z to redo
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && isOpen) {
+        e.preventDefault();
+        redo();
+      }
+      // Escape to close
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+      // ? to show shortcuts
+      if (e.key === '?' && isOpen) {
+        setShowShortcuts(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isOpen, historyIndex, themeHistory]);
+
+  // Save to history
+  const saveToHistory = useCallback((theme) => {
+    setThemeHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(JSON.parse(JSON.stringify(theme)));
+      return newHistory.slice(-20); // Keep last 20 changes
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 19));
+  }, [historyIndex]);
+
+  // Undo function
+  const undo = () => {
+    if (historyIndex > 0) {
+      const previousTheme = themeHistory[historyIndex - 1];
+      setCustomTheme(previousTheme);
+      applyTheme(previousTheme);
+      setHistoryIndex(prev => prev - 1);
+    }
+  };
+
+  // Redo function
+  const redo = () => {
+    if (historyIndex < themeHistory.length - 1) {
+      const nextTheme = themeHistory[historyIndex + 1];
+      setCustomTheme(nextTheme);
+      applyTheme(nextTheme);
+      setHistoryIndex(prev => prev + 1);
+    }
+  };
+
+  // Random color generator
+  const generateRandomColor = () => {
+    return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  };
+
+  const randomizeTheme = () => {
+    const randomTheme = {
+      primary: generateRandomColor(),
+      secondary: generateRandomColor(),
+      accent: generateRandomColor(),
+      background: Math.random() > 0.5 ? '#ffffff' : '#1a1a1a',
+      text: Math.random() > 0.5 ? '#2c3e50' : '#ecf0f1',
+      cardBg: Math.random() > 0.5 ? '#f8f9fa' : '#2c3e50'
+    };
+    setCustomTheme(randomTheme);
+    saveToHistory(randomTheme);
+    applyTheme(randomTheme);
+  };
+
+  // Color blindness simulation
+  const simulateColorBlindness = (hex, mode) => {
+    if (mode === 'none') return hex;
+
+    const rgb = parseInt(hex.slice(1), 16);
+    let r = (rgb >> 16) & 0xff;
+    let g = (rgb >> 8) & 0xff;
+    let b = rgb & 0xff;
+
+    switch (mode) {
+      case 'protanopia': // Red-blind
+        r = 0.567 * r + 0.433 * g;
+        g = 0.558 * r + 0.442 * g;
+        b = 0.242 * g + 0.758 * b;
+        break;
+      case 'deuteranopia': // Green-blind
+        r = 0.625 * r + 0.375 * g;
+        g = 0.7 * r + 0.3 * g;
+        b = 0.3 * g + 0.7 * b;
+        break;
+      case 'tritanopia': // Blue-blind
+        r = 0.95 * r + 0.05 * g;
+        g = 0.433 * g + 0.567 * b;
+        b = 0.475 * g + 0.525 * b;
+        break;
+      default:
+        break;
+    }
+
+    r = Math.round(Math.max(0, Math.min(255, r)));
+    g = Math.round(Math.max(0, Math.min(255, g)));
+    b = Math.round(Math.max(0, Math.min(255, b)));
+
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  // Apply color blindness to all colors
+  const applyColorBlindnessFilter = (theme) => {
+    if (colorBlindMode === 'none') return theme;
+
+    const filtered = {};
+    Object.keys(theme).forEach(key => {
+      filtered[key] = simulateColorBlindness(theme[key], colorBlindMode);
+    });
+    return filtered;
+  };
+
+  // Toggle favorite theme
+  const toggleFavorite = (themeId) => {
+    setFavoriteThemes(prev => {
+      if (prev.includes(themeId)) {
+        const updated = prev.filter(id => id !== themeId);
+        localStorage.setItem('favorite-themes', JSON.stringify(updated));
+        return updated;
+      } else {
+        const updated = [...prev, themeId];
+        localStorage.setItem('favorite-themes', JSON.stringify(updated));
+        return updated;
+      }
+    });
+  };
+
+  // Theme comparison
+  const startComparison = (theme, index) => {
+    const newCompare = [...compareThemes];
+    newCompare[index] = theme;
+    setCompareThemes(newCompare);
+    if (newCompare[0] && newCompare[1]) {
+      setCompareMode(true);
+    }
+  };
 
   // Auto-detect system dark mode preference
   useEffect(() => {
@@ -418,11 +584,13 @@ const ThemeCustomizer = () => {
   // Apply color harmony
   const applyColorHarmony = () => {
     const harmony = generateHarmony(customTheme.primary, colorHarmony);
-    setCustomTheme(prev => ({
-      ...prev,
+    const newTheme = {
+      ...customTheme,
       secondary: harmony.secondary,
       accent: harmony.accent
-    }));
+    };
+    setCustomTheme(newTheme);
+    saveToHistory(newTheme);
     setSelectedTheme('custom');
   };
 
@@ -434,6 +602,15 @@ const ThemeCustomizer = () => {
         setSavedThemes(JSON.parse(saved));
       } catch (e) {
         console.error('Failed to load saved themes', e);
+      }
+    }
+
+    const favorites = localStorage.getItem('favorite-themes');
+    if (favorites) {
+      try {
+        setFavoriteThemes(JSON.parse(favorites));
+      } catch (e) {
+        console.error('Failed to load favorites', e);
       }
     }
 
@@ -451,6 +628,7 @@ const ThemeCustomizer = () => {
         setGradientAngle(parsed.gradientAngle || 135);
         setShadowIntensity(parsed.shadowIntensity || 1);
         setAutoDetectDarkMode(parsed.autoDetectDarkMode || false);
+        setColorBlindMode(parsed.colorBlindMode || 'none');
       } catch (e) {
         console.error('Failed to load theme settings', e);
       }
@@ -463,7 +641,8 @@ const ThemeCustomizer = () => {
   }, [customTheme, checkContrast]);
 
   const applyTheme = (theme = customTheme, preview = false) => {
-    const adjustedTheme = colorBrightness === 100 && colorSaturation === 100 ? theme : applyColorAdjustments();
+    let adjustedTheme = colorBrightness === 100 && colorSaturation === 100 ? theme : applyColorAdjustments();
+    adjustedTheme = applyColorBlindnessFilter(adjustedTheme);
     const root = document.documentElement;
 
     if (preview) {
@@ -504,7 +683,8 @@ const ThemeCustomizer = () => {
       gradientEnabled,
       gradientAngle,
       shadowIntensity,
-      autoDetectDarkMode
+      autoDetectDarkMode,
+      colorBlindMode
     };
     localStorage.setItem('theme-settings', JSON.stringify(settings));
   };
@@ -512,6 +692,7 @@ const ThemeCustomizer = () => {
   const handleThemeSelect = (theme) => {
     setSelectedTheme(theme.id);
     setCustomTheme(theme.colors);
+    saveToHistory(theme.colors);
     applyTheme(theme.colors);
   };
 
@@ -530,6 +711,7 @@ const ThemeCustomizer = () => {
     if (previewTheme) {
       setSelectedTheme(previewTheme.id);
       setCustomTheme(previewTheme.colors);
+      saveToHistory(previewTheme.colors);
       applyTheme(previewTheme.colors);
     }
     setShowPreview(false);
@@ -537,7 +719,9 @@ const ThemeCustomizer = () => {
   };
 
   const handleColorChange = (key, value) => {
-    setCustomTheme(prev => ({ ...prev, [key]: value }));
+    const newTheme = { ...customTheme, [key]: value };
+    setCustomTheme(newTheme);
+    saveToHistory(newTheme);
     setSelectedTheme('custom');
   };
 
@@ -546,7 +730,7 @@ const ThemeCustomizer = () => {
       name: themeName || 'Custom Theme',
       colors: customTheme,
       layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity },
-      version: '2.0'
+      version: '3.0'
     };
     const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -576,6 +760,7 @@ const ThemeCustomizer = () => {
               setShadowIntensity(imported.layout.shadowIntensity || 1);
             }
             setSelectedTheme('custom');
+            saveToHistory(imported.colors);
             applyTheme(imported.colors);
             alert('Theme imported successfully!');
           }
@@ -620,6 +805,7 @@ const ThemeCustomizer = () => {
       setShadowIntensity(theme.layout.shadowIntensity || 1);
     }
     setSelectedTheme(theme.id);
+    saveToHistory(theme.colors);
     applyTheme(theme.colors);
   };
 
@@ -658,13 +844,15 @@ const ThemeCustomizer = () => {
       setShadowIntensity(1);
       setColorBrightness(100);
       setColorSaturation(100);
+      setColorBlindMode('none');
+      saveToHistory(defaultTheme.colors);
       applyTheme(defaultTheme.colors);
     }
   };
 
   useEffect(() => {
     applyTheme();
-  }, [fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity, colorBrightness, colorSaturation]);
+  }, [fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity, colorBrightness, colorSaturation, colorBlindMode]);
 
   // Load theme from URL on mount
   useEffect(() => {
@@ -685,6 +873,7 @@ const ThemeCustomizer = () => {
             setShadowIntensity(decoded.layout.shadowIntensity || 1);
           }
           setSelectedTheme('custom');
+          saveToHistory(decoded.colors);
           applyTheme(decoded.colors);
         }
       } catch (e) {
@@ -693,9 +882,11 @@ const ThemeCustomizer = () => {
     }
   }, []);
 
-  const filteredThemes = themeCategory === 'all'
-    ? presetThemes
-    : presetThemes.filter(t => t.category === themeCategory);
+  const filteredThemes = presetThemes.filter(t => {
+    const matchesCategory = themeCategory === 'all' || t.category === themeCategory;
+    const matchesSearch = searchQuery === '' || t.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <>
@@ -703,6 +894,7 @@ const ThemeCustomizer = () => {
         className="theme-customizer-toggle"
         onClick={() => setIsOpen(true)}
         aria-label="Open theme customizer"
+        title="Press Ctrl+K to toggle"
       >
         🎨
       </button>
@@ -711,8 +903,13 @@ const ThemeCustomizer = () => {
         <div className="theme-customizer-overlay" onClick={() => setIsOpen(false)}>
           <div className="theme-customizer-modal" onClick={(e) => e.stopPropagation()}>
             <div className="theme-customizer-header">
-              <h2>🎨 Theme Customizer Pro</h2>
-              <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
+              <h2>🎨 Theme Customizer Ultimate</h2>
+              <div className="header-actions">
+                <button onClick={() => setShowShortcuts(true)} className="shortcuts-btn" title="Keyboard shortcuts (?)">
+                  ⌨️
+                </button>
+                <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
+              </div>
             </div>
 
             <div className="theme-customizer-tabs">
@@ -757,6 +954,19 @@ const ThemeCustomizer = () => {
             <div className="theme-customizer-content">
               {activeTab === 'themes' && (
                 <div className="themes-tab">
+                  <div className="search-bar">
+                    <input
+                      type="text"
+                      placeholder="Search themes..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="theme-search-input"
+                    />
+                    <button onClick={randomizeTheme} className="random-theme-btn" title="Generate random theme">
+                      🎲 Random
+                    </button>
+                  </div>
+
                   <div className="theme-category-filter">
                     {Object.entries(themeCategories).map(([key, cat]) => (
                       <button
@@ -768,6 +978,7 @@ const ThemeCustomizer = () => {
                       </button>
                     ))}
                   </div>
+
                   <h3>Preset Themes ({filteredThemes.length})</h3>
                   <div className="theme-grid">
                     {filteredThemes.map(theme => (
@@ -778,6 +989,16 @@ const ThemeCustomizer = () => {
                         <div className="theme-card-header">
                           <span className="theme-icon">{theme.icon}</span>
                           <span className="theme-name">{theme.name}</span>
+                          <button
+                            className={`favorite-btn ${favoriteThemes.includes(theme.id) ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(theme.id);
+                            }}
+                            title="Add to favorites"
+                          >
+                            {favoriteThemes.includes(theme.id) ? '⭐' : '☆'}
+                          </button>
                         </div>
                         <div className="theme-colors">
                           <div className="color-dot" style={{ background: theme.colors.primary }} />
@@ -868,6 +1089,28 @@ const ThemeCustomizer = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="history-controls">
+                    <button
+                      onClick={undo}
+                      disabled={historyIndex <= 0}
+                      className="history-btn"
+                      title="Undo (Ctrl+Z)"
+                    >
+                      ↶ Undo
+                    </button>
+                    <button
+                      onClick={redo}
+                      disabled={historyIndex >= themeHistory.length - 1}
+                      className="history-btn"
+                      title="Redo (Ctrl+Shift+Z)"
+                    >
+                      ↷ Redo
+                    </button>
+                    <span className="history-info">
+                      {themeHistory.length > 0 && `${historyIndex + 1} / ${themeHistory.length}`}
+                    </span>
                   </div>
                 </div>
               )}
@@ -974,6 +1217,21 @@ const ThemeCustomizer = () => {
                       onChange={(e) => setShadowIntensity(Number(e.target.value))}
                     />
                   </div>
+
+                  <div className="advanced-control">
+                    <label>Color Blindness Simulation:</label>
+                    <select
+                      value={colorBlindMode}
+                      onChange={(e) => setColorBlindMode(e.target.value)}
+                      className="colorblind-select"
+                    >
+                      <option value="none">None</option>
+                      <option value="protanopia">Protanopia (Red-blind)</option>
+                      <option value="deuteranopia">Deuteranopia (Green-blind)</option>
+                      <option value="tritanopia">Tritanopia (Blue-blind)</option>
+                    </select>
+                    <p className="control-description">Simulate how your theme appears to users with color vision deficiency</p>
+                  </div>
                 </div>
               )}
 
@@ -992,6 +1250,20 @@ const ThemeCustomizer = () => {
                       💾 Save Theme
                     </button>
                   </div>
+
+                  {favoriteThemes.length > 0 && (
+                    <>
+                      <h3>Favorite Themes ({favoriteThemes.length})</h3>
+                      <div className="favorite-themes-grid">
+                        {presetThemes.filter(t => favoriteThemes.includes(t.id)).map(theme => (
+                          <div key={theme.id} className="favorite-theme-card" onClick={() => handleThemeSelect(theme)}>
+                            <span className="theme-icon">{theme.icon}</span>
+                            <span className="theme-name">{theme.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
                   <h3>Your Saved Themes ({savedThemes.length})</h3>
                   {savedThemes.length === 0 ? (
@@ -1104,6 +1376,37 @@ const ThemeCustomizer = () => {
               <button onClick={copyShareUrl}>📋 Copy</button>
             </div>
             <button onClick={() => setShowShareModal(false)} className="close-share-btn">Close</button>
+          </div>
+        </div>
+      )}
+
+      {showShortcuts && (
+        <div className="shortcuts-modal-overlay" onClick={() => setShowShortcuts(false)}>
+          <div className="shortcuts-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <div className="shortcuts-list">
+              <div className="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                <span>Toggle Theme Customizer</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+                <span>Undo</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd>
+                <span>Redo</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>Esc</kbd>
+                <span>Close Customizer</span>
+              </div>
+              <div className="shortcut-item">
+                <kbd>?</kbd>
+                <span>Show Shortcuts</span>
+              </div>
+            </div>
+            <button onClick={() => setShowShortcuts(false)} className="close-shortcuts-btn">Close</button>
           </div>
         </div>
       )}
