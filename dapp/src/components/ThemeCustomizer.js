@@ -288,52 +288,89 @@ const ThemeCustomizer = () => {
     }
   };
 
-  // Random color generator
+  // Improved random color generator with HSL for better palette creation
   const generateRandomColor = () => {
     return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
   };
 
+  const hslToHex = (h, s, l) => {
+    let r, g, b;
+    s = s / 100;
+    l = l / 100;
+
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    const toHex = x => {
+      const hex = Math.round(x * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
   const randomizeTheme = () => {
+    // Generate a harmonious random theme using HSL
+    const baseHue = Math.random();
+    const isDark = Math.random() > 0.5;
+
     const randomTheme = {
-      primary: generateRandomColor(),
-      secondary: generateRandomColor(),
-      accent: generateRandomColor(),
-      background: Math.random() > 0.5 ? '#ffffff' : '#1a1a1a',
-      text: Math.random() > 0.5 ? '#2c3e50' : '#ecf0f1',
-      cardBg: Math.random() > 0.5 ? '#f8f9fa' : '#2c3e50'
+      primary: hslToHex(baseHue, 70, isDark ? 55 : 50),
+      secondary: hslToHex((baseHue + 0.1) % 1, 65, isDark ? 50 : 45),
+      accent: hslToHex((baseHue + 0.5) % 1, 75, isDark ? 60 : 55),
+      background: isDark ? '#1a1a1a' : '#ffffff',
+      text: isDark ? '#ecf0f1' : '#2c3e50',
+      cardBg: isDark ? '#2c3e50' : '#f8f9fa'
     };
     setCustomTheme(randomTheme);
     saveToHistory(randomTheme);
     applyTheme(randomTheme);
   };
 
-  // Color blindness simulation
+  // Color blindness simulation with correct matrix transformations
   const simulateColorBlindness = (hex, mode) => {
     if (mode === 'none') return hex;
 
     const rgb = parseInt(hex.slice(1), 16);
-    let r = (rgb >> 16) & 0xff;
-    let g = (rgb >> 8) & 0xff;
-    let b = rgb & 0xff;
+    const rOrig = (rgb >> 16) & 0xff;
+    const gOrig = (rgb >> 8) & 0xff;
+    const bOrig = rgb & 0xff;
+
+    let r, g, b;
 
     switch (mode) {
-      case 'protanopia': // Red-blind
-        r = 0.567 * r + 0.433 * g;
-        g = 0.558 * r + 0.442 * g;
-        b = 0.242 * g + 0.758 * b;
+      case 'protanopia': // Red-blind - save original values before transformation
+        r = 0.567 * rOrig + 0.433 * gOrig;
+        g = 0.558 * rOrig + 0.442 * gOrig;
+        b = 0.242 * gOrig + 0.758 * bOrig;
         break;
-      case 'deuteranopia': // Green-blind
-        r = 0.625 * r + 0.375 * g;
-        g = 0.7 * r + 0.3 * g;
-        b = 0.3 * g + 0.7 * b;
+      case 'deuteranopia': // Green-blind - save original values before transformation
+        r = 0.625 * rOrig + 0.375 * gOrig;
+        g = 0.7 * rOrig + 0.3 * gOrig;
+        b = 0.3 * gOrig + 0.7 * bOrig;
         break;
-      case 'tritanopia': // Blue-blind
-        r = 0.95 * r + 0.05 * g;
-        g = 0.433 * g + 0.567 * b;
-        b = 0.475 * g + 0.525 * b;
+      case 'tritanopia': // Blue-blind - save original values before transformation
+        r = 0.95 * rOrig + 0.05 * gOrig;
+        g = 0.433 * gOrig + 0.567 * bOrig;
+        b = 0.475 * gOrig + 0.525 * bOrig;
         break;
       default:
-        break;
+        r = rOrig;
+        g = gOrig;
+        b = bOrig;
     }
 
     r = Math.round(Math.max(0, Math.min(255, r)));
@@ -354,17 +391,22 @@ const ThemeCustomizer = () => {
     return filtered;
   };
 
-  // Toggle favorite theme
+  // Toggle favorite theme with error handling
   const toggleFavorite = (themeId) => {
     setFavoriteThemes(prev => {
-      if (prev.includes(themeId)) {
-        const updated = prev.filter(id => id !== themeId);
-        localStorage.setItem('favorite-themes', JSON.stringify(updated));
-        return updated;
-      } else {
-        const updated = [...prev, themeId];
-        localStorage.setItem('favorite-themes', JSON.stringify(updated));
-        return updated;
+      try {
+        if (prev.includes(themeId)) {
+          const updated = prev.filter(id => id !== themeId);
+          localStorage.setItem('favorite-themes', JSON.stringify(updated));
+          return updated;
+        } else {
+          const updated = [...prev, themeId];
+          localStorage.setItem('favorite-themes', JSON.stringify(updated));
+          return updated;
+        }
+      } catch (error) {
+        console.error('Failed to update favorites:', error);
+        return prev;
       }
     });
   };
@@ -673,20 +715,24 @@ const ThemeCustomizer = () => {
   };
 
   const saveThemeSettings = () => {
-    const settings = {
-      themeId: selectedTheme,
-      colors: customTheme,
-      fontSize,
-      borderRadius,
-      spacing,
-      animations,
-      gradientEnabled,
-      gradientAngle,
-      shadowIntensity,
-      autoDetectDarkMode,
-      colorBlindMode
-    };
-    localStorage.setItem('theme-settings', JSON.stringify(settings));
+    try {
+      const settings = {
+        themeId: selectedTheme,
+        colors: customTheme,
+        fontSize,
+        borderRadius,
+        spacing,
+        animations,
+        gradientEnabled,
+        gradientAngle,
+        shadowIntensity,
+        autoDetectDarkMode,
+        colorBlindMode
+      };
+      localStorage.setItem('theme-settings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Failed to save theme settings:', error);
+    }
   };
 
   const handleThemeSelect = (theme) => {
@@ -778,19 +824,24 @@ const ThemeCustomizer = () => {
       return;
     }
 
-    const newTheme = {
-      id: `custom-${Date.now()}`,
-      name: themeName,
-      colors: customTheme,
-      layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity },
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const newTheme = {
+        id: `custom-${Date.now()}`,
+        name: themeName,
+        colors: customTheme,
+        layout: { fontSize, borderRadius, spacing, animations, gradientEnabled, gradientAngle, shadowIntensity },
+        createdAt: new Date().toISOString()
+      };
 
-    const updated = [...savedThemes, newTheme];
-    setSavedThemes(updated);
-    localStorage.setItem('saved-themes', JSON.stringify(updated));
-    setThemeName('');
-    alert('Theme saved successfully!');
+      const updated = [...savedThemes, newTheme];
+      setSavedThemes(updated);
+      localStorage.setItem('saved-themes', JSON.stringify(updated));
+      setThemeName('');
+      alert('Theme saved successfully!');
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+      alert('Failed to save theme. Please try again.');
+    }
   };
 
   const loadSavedTheme = (theme) => {
@@ -810,9 +861,14 @@ const ThemeCustomizer = () => {
   };
 
   const deleteSavedTheme = (themeId) => {
-    const updated = savedThemes.filter(t => t.id !== themeId);
-    setSavedThemes(updated);
-    localStorage.setItem('saved-themes', JSON.stringify(updated));
+    try {
+      const updated = savedThemes.filter(t => t.id !== themeId);
+      setSavedThemes(updated);
+      localStorage.setItem('saved-themes', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to delete theme:', error);
+      alert('Failed to delete theme. Please try again.');
+    }
   };
 
   const generateShareUrl = () => {
@@ -826,8 +882,12 @@ const ThemeCustomizer = () => {
   };
 
   const copyShareUrl = () => {
-    navigator.clipboard.writeText(shareUrl);
-    alert('Share link copied to clipboard!');
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => alert('Share link copied to clipboard!'))
+      .catch((error) => {
+        console.error('Failed to copy to clipboard:', error);
+        alert('Failed to copy to clipboard. Please copy manually.');
+      });
   };
 
   const resetToDefault = () => {
