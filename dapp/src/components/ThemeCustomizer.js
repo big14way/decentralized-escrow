@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import '../styles/ThemeCustomizer.css';
 
 const ThemeCustomizer = () => {
@@ -25,18 +25,13 @@ const ThemeCustomizer = () => {
   const [colorSaturation, setColorSaturation] = useState(100);
   const [themeCategory, setThemeCategory] = useState('all');
 
-  // New advanced features
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareThemes, setCompareThemes] = useState([null, null]);
+  // Advanced features
   const [colorBlindMode, setColorBlindMode] = useState('none');
   const [themeHistory, setThemeHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [scheduledThemes, setScheduledThemes] = useState([]);
-  const [showScheduler, setShowScheduler] = useState(false);
   const [favoriteThemes, setFavoriteThemes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [randomizeColors, setRandomizeColors] = useState(false);
 
   const [customTheme, setCustomTheme] = useState({
     primary: '#3498db',
@@ -47,15 +42,17 @@ const ThemeCustomizer = () => {
     cardBg: '#f8f9fa'
   });
 
-  const themeCategories = {
+  // Memoize theme categories to prevent recreation on every render
+  const themeCategories = useMemo(() => ({
     all: { name: 'All Themes', icon: '🎨' },
     light: { name: 'Light', icon: '☀️' },
     dark: { name: 'Dark', icon: '🌙' },
     colorful: { name: 'Colorful', icon: '🌈' },
     professional: { name: 'Professional', icon: '💼' }
-  };
+  }), []);
 
-  const presetThemes = [
+  // Memoize preset themes to prevent recreation on every render
+  const presetThemes = useMemo(() => [
     {
       id: 'default',
       name: 'Default Blue',
@@ -224,7 +221,25 @@ const ThemeCustomizer = () => {
         cardBg: '#f5f5f5'
       }
     }
-  ];
+  ], []);
+
+  // Undo function with useCallback for performance
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const previousTheme = themeHistory[historyIndex - 1];
+      setCustomTheme(previousTheme);
+      setHistoryIndex(prev => prev - 1);
+    }
+  }, [historyIndex, themeHistory]);
+
+  // Redo function with useCallback for performance
+  const redo = useCallback(() => {
+    if (historyIndex < themeHistory.length - 1) {
+      const nextTheme = themeHistory[historyIndex + 1];
+      setCustomTheme(nextTheme);
+      setHistoryIndex(prev => prev + 1);
+    }
+  }, [historyIndex, themeHistory]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -256,9 +271,9 @@ const ThemeCustomizer = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isOpen, historyIndex, themeHistory]);
+  }, [isOpen, undo, redo]);
 
-  // Save to history
+  // Save to history with useCallback for performance
   const saveToHistory = useCallback((theme) => {
     setThemeHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1);
@@ -268,32 +283,8 @@ const ThemeCustomizer = () => {
     setHistoryIndex(prev => Math.min(prev + 1, 19));
   }, [historyIndex]);
 
-  // Undo function
-  const undo = () => {
-    if (historyIndex > 0) {
-      const previousTheme = themeHistory[historyIndex - 1];
-      setCustomTheme(previousTheme);
-      applyTheme(previousTheme);
-      setHistoryIndex(prev => prev - 1);
-    }
-  };
-
-  // Redo function
-  const redo = () => {
-    if (historyIndex < themeHistory.length - 1) {
-      const nextTheme = themeHistory[historyIndex + 1];
-      setCustomTheme(nextTheme);
-      applyTheme(nextTheme);
-      setHistoryIndex(prev => prev + 1);
-    }
-  };
-
-  // Improved random color generator with HSL for better palette creation
-  const generateRandomColor = () => {
-    return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-  };
-
-  const hslToHex = (h, s, l) => {
+  // HSL to Hex conversion helper function - memoized for better performance
+  const hslToHex = useCallback((h, s, l) => {
     let r, g, b;
     s = s / 100;
     l = l / 100;
@@ -320,9 +311,9 @@ const ThemeCustomizer = () => {
       return hex.length === 1 ? '0' + hex : hex;
     };
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-  };
+  }, []);
 
-  const randomizeTheme = () => {
+  const randomizeTheme = useCallback(() => {
     // Generate a harmonious random theme using HSL
     const baseHue = Math.random();
     const isDark = Math.random() > 0.5;
@@ -337,11 +328,10 @@ const ThemeCustomizer = () => {
     };
     setCustomTheme(randomTheme);
     saveToHistory(randomTheme);
-    applyTheme(randomTheme);
-  };
+  }, [hslToHex, saveToHistory]);
 
-  // Color blindness simulation with correct matrix transformations
-  const simulateColorBlindness = (hex, mode) => {
+  // Color blindness simulation with correct matrix transformations - memoized
+  const simulateColorBlindness = useCallback((hex, mode) => {
     if (mode === 'none') return hex;
 
     const rgb = parseInt(hex.slice(1), 16);
@@ -378,10 +368,10 @@ const ThemeCustomizer = () => {
     b = Math.round(Math.max(0, Math.min(255, b)));
 
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  };
+  }, []);
 
-  // Apply color blindness to all colors
-  const applyColorBlindnessFilter = (theme) => {
+  // Apply color blindness to all colors - memoized with useCallback
+  const applyColorBlindnessFilter = useCallback((theme) => {
     if (colorBlindMode === 'none') return theme;
 
     const filtered = {};
@@ -389,10 +379,10 @@ const ThemeCustomizer = () => {
       filtered[key] = simulateColorBlindness(theme[key], colorBlindMode);
     });
     return filtered;
-  };
+  }, [colorBlindMode, simulateColorBlindness]);
 
-  // Toggle favorite theme with error handling
-  const toggleFavorite = (themeId) => {
+  // Toggle favorite theme with error handling - memoized
+  const toggleFavorite = useCallback((themeId) => {
     setFavoriteThemes(prev => {
       try {
         if (prev.includes(themeId)) {
@@ -409,17 +399,7 @@ const ThemeCustomizer = () => {
         return prev;
       }
     });
-  };
-
-  // Theme comparison
-  const startComparison = (theme, index) => {
-    const newCompare = [...compareThemes];
-    newCompare[index] = theme;
-    setCompareThemes(newCompare);
-    if (newCompare[0] && newCompare[1]) {
-      setCompareMode(true);
-    }
-  };
+  }, []);
 
   // Auto-detect system dark mode preference
   useEffect(() => {
@@ -942,11 +922,14 @@ const ThemeCustomizer = () => {
     }
   }, []);
 
-  const filteredThemes = presetThemes.filter(t => {
-    const matchesCategory = themeCategory === 'all' || t.category === themeCategory;
-    const matchesSearch = searchQuery === '' || t.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Memoize filtered themes to prevent unnecessary recalculations
+  const filteredThemes = useMemo(() => {
+    return presetThemes.filter(t => {
+      const matchesCategory = themeCategory === 'all' || t.category === themeCategory;
+      const matchesSearch = searchQuery === '' || t.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [presetThemes, themeCategory, searchQuery]);
 
   return (
     <>
